@@ -1,5 +1,6 @@
 package com.example.firebaseapp;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
@@ -8,13 +9,23 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     EditText CodigoET, NombreET, DescripcionET, GeneroET;
     Button IngresarBTN, ConsultarBTN, ActualizarBTN, BorrarBTN, LimpiarBTN;
+    List<Anime> listAnimes = new ArrayList<Anime>();
+
+    FirebaseDatabase DB = FirebaseDatabase.getInstance();
+    DatabaseReference DBref = DB.getReference();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,8 +43,7 @@ public class MainActivity extends AppCompatActivity {
         BorrarBTN = findViewById(R.id.borrarBTN);
         LimpiarBTN = findViewById(R.id.limpiarBTN);
 
-        FirebaseDatabase DB = FirebaseDatabase.getInstance();
-        DatabaseReference DBref = DB.getReference();
+        obtenerlista();
 
         IngresarBTN.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -61,8 +71,12 @@ public class MainActivity extends AppCompatActivity {
 
         ConsultarBTN.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
-
+            public void onClick(View view)
+            {
+                if(!cargarDatosACampos())
+                {
+                    Toast.makeText(MainActivity.this, "No se encontró ningun registro con ese codigo", Toast.LENGTH_LONG).show();
+                }
             }
         });
 
@@ -82,12 +96,55 @@ public class MainActivity extends AppCompatActivity {
 
         LimpiarBTN.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
-
+            public void onClick(View view)
+            {
+                limpiarPantalla();
             }
         });
 
 
+    }
+
+    public void obtenerlista()
+    {
+        DBref.child("Animes").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot)
+            {
+                listAnimes.clear();
+
+                for(DataSnapshot obj : snapshot.getChildren())
+                {
+                    Anime anime = obj.getValue(Anime.class);
+                    listAnimes.add(anime);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error)
+            {
+
+            }
+        });
+    }
+
+    public boolean cargarDatosACampos()
+    {
+        boolean existe = false;
+
+        for(Anime anime : listAnimes)
+        {
+            if(CodigoET.getText().toString().equals(anime.getCodigo()))
+            {
+                existe = true;
+                NombreET.setText(anime.getNombre());
+                DescripcionET.setText(anime.getDescripcion());
+                GeneroET.setText(anime.getGenero());
+                break;
+            }
+        }
+
+        return existe;
     }
 
     public void limpiarPantalla()
